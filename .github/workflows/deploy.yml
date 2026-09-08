@@ -1,67 +1,92 @@
 name: Deployment
+
 on:
   push:
     branches:
       - main
+
 jobs:
   lint:
     runs-on: ubuntu-latest
+
     steps:
       - name: Get code
         uses: actions/checkout@v7
+
       - name: Load & cache dependencies
         id: cache-deps
         uses: ./.github/actions/cached-deps
         with:
           caching: false
+
       - name: Output information
         run: echo "Cache used? ${{ steps.cache-deps.outputs.used-cache }}"
+
       - name: Lint code
         run: npm run lint
+
   test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Get code
         uses: actions/checkout@v7
+
       - name: Load & cache dependencies
         uses: ./.github/actions/cached-deps
+
       - name: Test code
         id: run-tests
         run: npm run test
+
       - name: Upload test report
         if: failure() && steps.run-tests.outcome == 'failure'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v6
         with:
           name: test-report
           path: test.json
+
   build:
-    needs: test
+    needs:
+      - lint
+      - test
+
     runs-on: ubuntu-latest
+
     steps:
       - name: Get code
         uses: actions/checkout@v7
+
       - name: Load & cache dependencies
         uses: ./.github/actions/cached-deps
+
       - name: Build website
         run: npm run build
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v7
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v6
         with:
           name: dist-files
           path: dist
+
   deploy:
     needs: build
+
     runs-on: ubuntu-latest
+
     steps:
       - name: Get code
         uses: actions/checkout@v7
+
       - name: Get build artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v6
         with:
           name: dist-files
           path: ./dist
+
       - name: Output contents
-        run: ls
+        run: ls -la dist
+
       - name: Deploy site
         id: deploy
         uses: ./.github/actions/deploy-s3-docker
@@ -72,13 +97,7 @@ jobs:
           bucket: gha-custom-action-hosting-368036274206-ap-southeast-2-an
           bucket-region: ap-southeast-2
           dist-folder: ./dist
+
       - name: Output information
         run: |
           echo "Live URL: ${{ steps.deploy.outputs.website-url }}"
-  # information:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Get code
-  #       uses: actions/checkout@v7
-  #     - name: Run custom action
-  #       uses: ./.github/actions/deploy-s3-javascript
