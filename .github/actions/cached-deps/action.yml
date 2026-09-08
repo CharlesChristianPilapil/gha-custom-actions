@@ -1,5 +1,5 @@
-name: Get & Cache dependencies
-description: Get the dependencies (via npm) and cache them.
+name: "Get & Cache dependencies"
+description: "Get the dependencies (via npm) and cache them."
 inputs:
   caching:
     description: Whether to cache dependencies or not
